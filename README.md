@@ -2,8 +2,7 @@
 
 **ESP32 development helper for Neovim.**  
 Designed for a smooth ESP-IDF workflow inside Neovim and [LazyVim](https://github.com/LazyVim/LazyVim).  
-Uses [snacks.nvim](https://github.com/folke/snacks.nvim) for terminal and picker UIs.
-
+Uses [toggleterm.nvim](https://github.com/akinsho/toggleterm.nvim) for terminals and  [snacks.nvim](https://github.com/folke/snacks.nvim) for picker UIs.
 ---
 
 ## ✨ Features
@@ -24,6 +23,7 @@ Uses [snacks.nvim](https://github.com/folke/snacks.nvim) for terminal and picker
 - ESP-specific `clangd` is installed via `idf_tools.py install esp-clang`
 - ESP-specific `clangd` is configured via `idf.py -B build.clang -D IDF_TOOLCHAIN=clang reconfigure` (can be done via command `:ESPReconfigure`)
 - [snacks.nvim](https://github.com/folke/snacks.nvim) (automatically installed via LazyVim dependencies)
+- [toggleterm.nvim](https://github.com/akinsho/toggleterm.nvim)
 
 ---
 
@@ -33,7 +33,10 @@ Install via Lazy.nvim or any other plugin manager. Via Lazy.nvim:
 
 ```lua
 {
-  "Aietes/esp32.nvim",
+  "MarcioBulla/esp32.nvim",
+  dependencies = {
+    "akinsho/toggleterm.nvim",
+  },
 }
 ```
 

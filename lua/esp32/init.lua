@@ -1,6 +1,9 @@
 local M = {}
 
+local Terminal = require("toggleterm.terminal").Terminal
 local Snacks = require("snacks")
+
+M.idf_term = nil
 
 ---@class ESP32Opts
 local defaults = {
@@ -26,7 +29,8 @@ function M.list_ports()
 			if not name then
 				break
 			end
-			if name:match("^cu%.") then
+			-- Aqui mudamos o padrão para 'ttyUSB' ou 'ttyACM' seguido de número
+			if name:match("^ttyUSB%d+$") or name:match("^ttyACM%d+$") then
 				table.insert(ports, { port = "/dev/" .. name })
 			end
 		end
@@ -84,7 +88,7 @@ function M.ensure_clangd()
 	end
 end
 
---- Open a Snacks terminal for idf.py command
+--- Open a ToggleTerm for idf.py command
 function M.command(cmd, port)
 	local opts = M.options
 	local full_cmd = "idf.py -B " .. opts.build_dir
@@ -93,15 +97,28 @@ function M.command(cmd, port)
 	end
 	full_cmd = full_cmd .. " " .. cmd
 
-	Snacks.terminal.open(full_cmd, {
-		win = {
-			width = 0.6,
-			height = 0.7,
-			border = "single",
-			title = "Ctrl + ] to stop",
-			title_pos = "center",
-		},
-	})
+	if not M.idf_term then
+		local idf_export = ". " .. os.getenv("HOME") .. "/esp/esp-idf/export.sh"
+
+		M.idf_term = Terminal:new({
+			display_name = "ESP-IDF",
+			direction = "float",
+			close_on_exit = false,
+		})
+
+		if not M.idf_term:is_open() then
+			M.idf_term:open()
+		end
+
+		M.idf_term:send(idf_export, false)
+		M.idf_term:send("clear")
+	end
+
+	if not M.idf_term:is_open() then
+		M.idf_term:open()
+	end
+
+	M.idf_term:send(full_cmd, false)
 end
 
 --- Run idf.py build
@@ -150,14 +167,7 @@ end
 --- Run idf.py reconfigure for build.clang
 function M.reconfigure()
 	local build_dir = M.options.build_dir
-	Snacks.terminal.open("idf.py -B " .. build_dir .. " -D IDF_TOOLCHAIN=clang reconfigure", {
-		win = {
-			width = 0.5,
-			height = 0.4,
-			title = "ESP-IDF Reconfigure",
-			title_pos = "center",
-		},
-	})
+	M.command("-D IDF_TOOLCHAIN=clang reconfigure")
 end
 
 --- Set up ESP32 LSP configuration
@@ -217,13 +227,7 @@ function M.info()
 		return vim.fn.executable(bin) == 1 and "✓" or "✗"
 	end
 
-	table.insert(messages, check_bin("idf.py") .. " idf.py")
 	table.insert(messages, check_bin("llvm-ar") .. " llvm-ar")
-	table.insert(messages, "IDF_PATH: " .. (vim.env.IDF_PATH or "✗ not set"))
-
-	if vim.env.IDF_PATH == nil then
-		table.insert(messages, "⚠️ You may need to run: source ~/esp/esp-idf/export.sh")
-	end
 
 	vim.notify(table.concat(messages, "\n"), vim.log.levels.INFO)
 end
